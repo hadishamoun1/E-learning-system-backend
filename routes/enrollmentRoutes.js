@@ -1,10 +1,12 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const enrollmentController = require('../controllers/enrollmentController');
+const enrollmentController = require("../controllers/enrollmentController");
 
-router.post('/', enrollmentController.createEnrollment);
-router.get('/', enrollmentController.getEnrollments);
+router.post("/", enrollmentController.createEnrollment);
+router.get("/", enrollmentController.getEnrollments);
 
-// Add more routes as needed
+router.get("/class/:classId/students", enrollmentController.getStudentsByClass);
+router.get("/user/:userId/classes", enrollmentController.getClassesByUser);
+router.delete("/:id", enrollmentController.deleteEnrollment);
 
 module.exports = router;
