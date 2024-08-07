@@ -1,35 +1,77 @@
-const WithdrawalRequest = require("../models/WithdrawalRequest");
-const User = require("../models/User");
-const Class = require("../models/Class");
+// controllers/withdrawalController.js
 
-// Controller function to handle creating a withdrawal request
-exports.createWithdrawalRequest = async (req, res) => {
+const Enrollment = require("../models/Enrollment");
+const WithdrawalRequest = require("../models/WithdrawalRequest");
+
+exports.approveRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { classId, userId } = req.body;
+
+    // Remove the enrollment
+    await Enrollment.findOneAndDelete({ user: userId, class: classId });
+    await WithdrawalRequest.findByIdAndDelete(requestId);
+    // Other approval logic if needed
+    res
+      .status(200)
+      .json({ message: "Request approved and enrollment removed." });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.rejectRequest = async (req, res) => {
+  const { requestId } = req.params;
+
+  try {
+    const request = await WithdrawalRequest.findByIdAndUpdate(
+      requestId,
+      { status: "rejected", processedAt: Date.now() },
+      { new: true }
+    );
+
+    if (!request) {
+      return res.status(404).json({ message: "Withdrawal request not found" });
+    }
+    await WithdrawalRequest.findByIdAndDelete(requestId);
+    res
+      .status(200)
+      .json({ message: "Withdrawal request rejected. User remains enrolled." });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to reject withdrawal request", error });
+  }
+};
+// controllers/withdrawalController.js
+
+// Function to get all withdrawal requests
+exports.getAllWithdrawalRequests = async (req, res) => {
+  try {
+    const requests = await WithdrawalRequest.find()
+      .populate("user", "name")
+      .populate("class", "title");
+    res.json(requests);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to fetch withdrawal requests", error: err });
+  }
+};
+
+exports.addWithdrawalRequest = async (req, res) => {
   const { userId, classId, reason } = req.body;
 
   try {
-    // Validate user and class IDs
-    const user = await User.findById(userId);
-    const classObj = await Class.findById(classId);
-
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-
-    if (!classObj) {
-      return res.status(404).send("Class not found");
-    }
-
-    // Create and save withdrawal request
-    const request = new WithdrawalRequest({
+    const newRequest = new WithdrawalRequest({
       user: userId,
       class: classId,
-      reason,
+      reason
     });
-    await request.save();
 
-    res.status(201).send("Withdrawal request saved successfully!");
+    await newRequest.save();
+    res.status(201).json({ message: "Withdrawal request added successfully", newRequest });
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Error saving withdrawal request");
+    res.status(500).json({ message: "Failed to add withdrawal request", error });
   }
 };

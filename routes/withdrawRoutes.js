@@ -1,8 +1,12 @@
+// routes/withdrawalRoutes.js
+
 const express = require("express");
 const router = express.Router();
 const withdrawalController = require("../controllers/withdrawController");
 
-// Define route for creating a withdrawal request
-router.post("/withdraw", withdrawalController.createWithdrawalRequest);
+router.post("/withdraw", withdrawalController.addWithdrawalRequest);
+router.get("/withdraw", withdrawalController.getAllWithdrawalRequests);
+router.post("/:requestId/approve", withdrawalController.approveRequest);
+router.post("/:requestId/reject", withdrawalController.rejectRequest);
 
 module.exports = router;
